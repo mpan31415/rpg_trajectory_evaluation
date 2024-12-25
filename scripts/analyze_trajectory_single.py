@@ -17,7 +17,7 @@ from multiple_traj_errors import MulTrajError
 
 init(autoreset=True)
 rc('font', **{'family': 'serif', 'serif': ['Cardo']})
-rc('text', usetex=True)
+rc('text', usetex=False)
 
 FORMAT = '.pdf'
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
               "We will plot trials {0}.".format(args.mul_plot_idx))
     else:
         args.mul_plot_idx = [0]
-    assert len(args.mul_plot_idx) is 1, "Multiple plots not supported yet"
+    assert len(args.mul_plot_idx) == 1, "Multiple plots not supported yet"
 
     for est_type_i, plot_dir_i in zip(args.est_types, plots_dirs):
         print(Fore.RED +
@@ -219,7 +219,7 @@ if __name__ == '__main__':
 
         fig = plt.figure(figsize=(8, 2.5))
         ax = fig.add_subplot(
-            111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+            111, xlabel='Distance [m]', ylabel='Scale Drift [%]',
             xlim=[0, plot_traj.accum_distances[-1]])
         pu.plot_error_n_dim(
             ax, plot_traj.accum_distances,
@@ -281,7 +281,7 @@ if __name__ == '__main__':
         fig = plt.figure(figsize=(6, 2.5))
         ax = fig.add_subplot(
             111, xlabel='Distance traveled [m]',
-            ylabel='Translation error [\%]')
+            ylabel='Translation error [%]')
         pu.boxplot_compare(
             ax, distances, rel_errors['rel_trans_perc'], labels, colors)
         fig.tight_layout()
@@ -302,7 +302,8 @@ if __name__ == '__main__':
 
         print(Fore.GREEN +
               "#### Done processing error type {0} ####".format(est_type_i))
-    import subprocess as s
-    s.call(['notify-send', 'rpg_trajectory_evaluation finished',
-            'results in: {0}'.format(os.path.abspath(args.result_dir))])
+        
+    # import subprocess as s
+    # s.call(['notify-send', 'rpg_trajectory_evaluation finished',
+    #         'results in: {0}'.format(os.path.abspath(args.result_dir))])
 
