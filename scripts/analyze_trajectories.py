@@ -22,7 +22,7 @@ from fn_constants import kNsToEstFnMapping, kNsToMatchFnMapping, kFnExt
 init(autoreset=True)
 
 rc('font', **{'family': 'serif', 'serif': ['Cardo']})
-rc('text', usetex=True)
+rc('text', usetex=False)
 
 FORMAT = '.pdf'
 
@@ -102,7 +102,7 @@ def plot_odometry_error_per_dataset(dataset_rel_err, dataset_names, algorithm_na
         fig = plt.figure(figsize=(12, 3))
         ax = fig.add_subplot(
             121, xlabel='Distance traveled (m)',
-            ylabel='Translation error (\%)')
+            ylabel='Translation error (%)')
         pu.boxplot_compare(ax, distances, [rel_err['trans_err_perc'][v] for v in algorithm_names],
                            config_labels, config_colors, legend=False)
         ax = fig.add_subplot(
@@ -286,7 +286,7 @@ def plot_overall_odometry_errors(odo_err_col, algorithm_names, rel_e_distances,
                                  plot_settings, output_dir):
     for et in odo_err_col:
         if et == 'rel_trans_perc':
-            ylabel = 'Translation error (\%)'
+            ylabel = 'Translation error (%)'
         elif et == 'rel_rot_deg_per_m':
             ylabel = 'Rotation error (deg / m)'
         else:
@@ -594,7 +594,7 @@ if __name__ == '__main__':
     print(Fore.RED+">>> Collecting odometry errors per algorithms...")
     if args.overall_odometry_error:
         rel_err_names = ['rel_trans_perc', 'rel_rot_deg_per_m']
-        rel_err_labels = ['Translation (\%)', 'Rotation (deg/meter)']
+        rel_err_labels = ['Translation (%)', 'Rotation (deg/meter)']
         all_odo_err = collect_odometry_error_per_algorithm(
             config_multierror_list, algorithms, rel_e_distances, rel_keys=rel_err_names)
         print(Fore.MAGENTA+'--- Plotting and writing overall odometry errors... ---')
@@ -646,9 +646,10 @@ if __name__ == '__main__':
             with open(os.path.join(datasets_res_dir[d], '{}_meas_stats.json'.format(d)), 'w') as f:
                 json.dump(dataset_alg_t_stats[didx], f, indent=2)
 
-    import subprocess as s
-    s.call(['notify-send', 'rpg_trajectory_evaluation finished',
-            'results in: {0}'.format(os.path.abspath(output_dir))])
+    # import subprocess as s
+    # s.call(['notify-send', 'rpg_trajectory_evaluation finished',
+    #         'results in: {0}'.format(os.path.abspath(output_dir))])
+    
     print("#####################################")
     print("<<< Finished.")
     print("#####################################")
