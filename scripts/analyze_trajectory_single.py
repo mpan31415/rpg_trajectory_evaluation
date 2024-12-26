@@ -22,10 +22,6 @@ rc('text', usetex=False)
 
 FORMAT = '.pdf'
 
-# suppress warnings
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 
 ######################################################################
 def analyze_multiple_trials(results_dir, est_type, n_trials,
