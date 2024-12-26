@@ -6,7 +6,7 @@ from utils import *
 datasets = ['kitti']
 # detectors = ['sift', 'harris', 'shi_tomasi', 'fast']
 detectors = ['sift', 'harris', 'shi_tomasi']
-# detectors = ['sift']
+# detectors = ['shi_tomasi']
 
 est_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'processed_result_files'))
 analysis_results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', "results", "vio_mini_project"))
@@ -30,8 +30,8 @@ for dataset in datasets:
         # slice the ground truth trajectory (only the last num_recorded_frames frames)
         if dataset == 'kitti':
             gt_traj = kitti_gt_traj[-num_recorded_frames:, :]
-        elif dataset == 'malaga':
-            gt_traj = malaga_gt_traj[-num_recorded_frames:, :]
+        # elif dataset == 'malaga':
+        #     gt_traj = malaga_gt_traj[-num_recorded_frames:, :]
         elif dataset == 'parking':
             gt_traj = parking_gt_traj[-num_recorded_frames:, :]
             

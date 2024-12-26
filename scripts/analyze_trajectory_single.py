@@ -193,11 +193,17 @@ if __name__ == '__main__':
                     FORMAT, bbox_inches="tight")
 
         fig = plt.figure(figsize=(8, 2.5))
+        # ax = fig.add_subplot(
+        #     111, xlabel='Distance [m]', ylabel='Position Drift [mm]',
+        #     xlim=[0, plot_traj.accum_distances[-1]])
+        # pu.plot_error_n_dim(ax, plot_traj.accum_distances,
+        #                     plot_traj.abs_errors['abs_e_trans_vec']*1000,
+        #                     plot_dir_i)
         ax = fig.add_subplot(
-            111, xlabel='Distance [m]', ylabel='Position Drift [mm]',
+            111, xlabel='Distance [m]', ylabel='Position Drift [m]',
             xlim=[0, plot_traj.accum_distances[-1]])
         pu.plot_error_n_dim(ax, plot_traj.accum_distances,
-                            plot_traj.abs_errors['abs_e_trans_vec']*1000,
+                            plot_traj.abs_errors['abs_e_trans_vec'],
                             plot_dir_i)
         ax.legend()
         fig.tight_layout()
