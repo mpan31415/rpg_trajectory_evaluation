@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 import matplotlib
 from colorama import init, Fore
+from pandas import DataFrame
 
 import add_path
 from trajectory import Trajectory
@@ -21,7 +22,12 @@ rc('text', usetex=False)
 
 FORMAT = '.pdf'
 
+# suppress warnings
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+
+######################################################################
 def analyze_multiple_trials(results_dir, est_type, n_trials,
                             recalculate_errors=False,
                             preset_boxplot_distances=[],
@@ -71,6 +77,57 @@ def analyze_multiple_trials(results_dir, est_type, n_trials,
     return traj_list, mt_error
 
 
+######################################################################
+def err_dict_to_dataframe(distance, err_dict) -> DataFrame:
+    
+    distances = np.array(distance)
+    dist_factors = ["dist1", "dist2", "dist3", "dist4", "dist5"]
+    trans_errs = err_dict['rel_trans'][0]
+    trans_perc_errs = err_dict['rel_trans_perc'][0]
+    yaw_errs = err_dict['rel_yaw'][0]
+    
+    # clip to the minimum number of samples
+    num_samples = len(trans_errs[4])
+    
+    sample_id_lst = []
+    dist_lst = []
+    dist_factor_lst = []
+    trans_err_lst = []
+    trans_perc_err_lst = []
+    yaw_err_lst = []
+    
+    for i in range(len(distances)):
+        
+        # reverse clipping
+        num_samples = len(trans_errs[i])
+        
+        sample_idx = np.arange(num_samples) + 1
+        dist = np.ones(num_samples) * distances[i]
+        dist_factor = [dist_factors[i] for _ in range(num_samples)]
+        
+        sample_id_lst.append(sample_idx)
+        dist_lst.append(dist)
+        dist_factor_lst.append(dist_factor)
+        
+        trans_err_lst.append(trans_errs[i][:num_samples])
+        trans_perc_err_lst.append(trans_perc_errs[i][:num_samples])
+        yaw_err_lst.append(yaw_errs[i][:num_samples])
+        
+    # write into Dataframes
+    df_dict = {
+        'sample_id': np.concatenate(sample_id_lst),
+        'distance': np.concatenate(dist_lst),
+        'dist_factor': np.concatenate(dist_factor_lst),
+        'trans_err': np.concatenate(trans_err_lst),
+        'trans_perc_err': np.concatenate(trans_perc_err_lst),
+        'yaw_err': np.concatenate(yaw_err_lst),
+    }
+    err_df = DataFrame(df_dict)
+    
+    return err_df
+
+
+######################################################################
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='''Analyze trajectory estimate in a folder.''')
@@ -269,6 +326,16 @@ if __name__ == '__main__':
         plot_types = ['rel_trans', 'rel_trans_perc', 'rel_yaw']
         rel_errors, distances = mt_error.get_relative_errors_and_distances(
             error_types=plot_types)
+        
+        ##################################################################
+        ################# convert dictionary to np array #################
+        err_df = err_dict_to_dataframe(distances, rel_errors)
+        
+        # save to csv
+        results_dir = plot_dir_i
+        err_df.to_csv(results_dir+'\\errors.csv', index=False)
+
+        ##################################################################
 
         labels = ['Estimate']
         colors = ['b']

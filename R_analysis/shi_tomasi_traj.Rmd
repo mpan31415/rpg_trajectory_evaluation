@@ -1,0 +1,175 @@
+---
+title: "move_times"
+output: html_document
+date: "2024-04-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis script for "
+
+```{r load libraries}
+library(readr)
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+library(stats)
+library(lme4)
+library(dplyr)
+library(ez)
+library(ltm)
+library(interactions)
+library(lmerTest)
+# library(viridis)
+# library(hrbrthemes)
+```
+
+
+## Extract dataframe from csv file and get (mean, sd) or (mean, se) summary
+
+```{r read csv}
+
+setwd("C:/Users/micha/OneDrive/ETH_GitHub_Repos/rpg_trajectory_evaluation/R_analysis/kitti_data/")
+task_df <- read_csv("shi_tomasi_errors.csv")
+
+dist_levels_order <- c("dist1", "dist2", "dist3", "dist4", "dist5")  # Replace these with your actual level names
+
+# Reorder the factor levels of "auto_level" according to levels_order
+task_df$dist_factor <- factor(task_df$dist_factor, levels = dist_levels_order)
+
+
+######################### get mean and sd (or se) ######################### 
+task_df %>%
+  group_by(dist_factor) %>%
+  get_summary_stats(trans_err, type = "mean_sd")
+
+
+
+```
+
+## Plots
+
+```{r do plotting}
+
+bxp1 <- ggboxplot(
+  task_df, x = "dist_factor", y = "trans_err", palette = "jco", outlier.shape = NA
+  )
+bxp1
+
+bxp1 <- ggboxplot(
+  task_df, x = "dist_factor", y = "trans_perc_err", palette = "jco", outlier.shape = NA
+  )
+bxp1
+
+bxp1 <- ggboxplot(
+  task_df, x = "dist_factor", y = "yaw_err", palette = "jco", outlier.shape = NA
+  )
+bxp1
+
+
+# # Plot
+# task_df %>%
+#   ggplot( aes(x=dist_factor, y=trans_err)) +
+#     geom_boxplot() +
+#     geom_jitter(color="black", size=0.4, alpha=0.9) +
+#     theme(
+#       legend.position="none",
+#       plot.title = element_text(size=11)
+#     ) +
+#     ggtitle("A boxplot with jitter") +
+#     xlab("")
+
+```
+
+
+## Check assumptions
+
+```{r check assumptions}
+
+# ######################### check for outliers ######################### 
+# task_df %>%
+#   group_by(dist_factor) %>%
+#   identify_outliers(trans_err)
+# 
+# ######################### check normality ######################### 
+# task_df %>%
+#   group_by(auto_level, ring_id) %>%
+#   shapiro_test(average_mt)
+# 
+# ######################### plot normality ######################### 
+# ggqqplot(task_df, "average_mt", ggtheme = theme_bw()) +
+#   facet_grid(ring_id ~ auto_level, labeller = "label_both")
+
+
+```
+
+
+## Fit ANOVA
+
+```{r fit model}
+
+######################### Two-way mixed ANOVA test #########################  
+res.aov <- anova_test(
+  data = task_df, dv = trans_err, wid = sample_id,
+  within = dist_factor
+  )
+get_anova_table(res.aov)
+
+pwc1 <- task_df %>%
+  t_test(
+    trans_err ~ dist_factor,
+    p.adjust.method = "holm"
+    )
+pwc1
+
+
+######################### Two-way mixed ANOVA test #########################  
+res.aov <- anova_test(
+  data = task_df, dv = trans_perc_err, wid = sample_id,
+  within = dist_factor
+  )
+get_anova_table(res.aov)
+
+
+######################### Two-way mixed ANOVA test #########################  
+res.aov <- anova_test(
+  data = task_df, dv = yaw_err, wid = sample_id,
+  within = dist_factor
+  )
+get_anova_table(res.aov)
+
+
+
+
+```
+
+## Fit Linear Model
+
+```{r fit model}
+
+# ###### fit linear mixed model 0 - EXCLUDING THE INTERACTION TERM ######
+model <- lmer(trans_err ~ distance + (1|sample_id),
+              data = task_df)
+summary(model)
+
+
+# ###### fit linear mixed model 2 ######
+# fit <- lm(average_mt ~ fitts_id_num * auto_level, data = task_df)
+# # summary(fit)
+# 
+# interact_plot(fit, pred = fitts_id_num, modx = auto_level, 
+#               interval = TRUE, int.type = "confidence", int.width = .8,
+#               plot.points = TRUE,
+#               x.label="Fitts ID", y.label="Move time (s)", 
+#               modx.labels = c("low", "med", "high")
+#               )
+
+
+
+```
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
