@@ -1,0 +1,264 @@
+---
+title: "move_times"
+output: html_document
+date: "2024-04-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis script for "
+
+```{r load libraries}
+library(readr)
+library(tidyverse)
+library(ggpubr)
+library(rstatix)
+library(stats)
+library(lme4)
+library(dplyr)
+library(ez)
+library(ltm)
+library(interactions)
+library(lmerTest)
+# library(viridis)
+# library(hrbrthemes)
+```
+
+
+## Extract dataframe from csv file and get (mean, sd) or (mean, se) summary
+
+```{r read csv}
+
+setwd("C:/Users/micha/OneDrive/ETH_GitHub_Repos/rpg_trajectory_evaluation/R_analysis/kitti_data/")
+task_df <- read_csv("all_errors.csv")
+
+dist_levels_order <- c("dist1", "dist2", "dist3", "dist4", "dist5")
+detectors_order <- c("sift", "harris", "shi_tomasi")
+
+# Reorder the factor levels
+task_df$dist_factor <- factor(task_df$dist_factor, levels = dist_levels_order)
+task_df$detector <- factor(task_df$detector, levels = detectors_order)
+
+######################### get mean and sd (or se) ######################### 
+task_df %>%
+  group_by(dist_factor, detector) %>%
+  get_summary_stats(trans_err, type = "mean_sd")
+
+
+
+```
+
+## Plots
+
+```{r do plotting}
+
+bxp1 <- ggboxplot(
+  task_df, x = "dist_factor", y = "trans_err",
+  color = "detector", palette = "jco", outlier.shape = NA
+  )
+bxp1
+
+bxp1 <- ggboxplot(
+  task_df, x = "dist_factor", y = "trans_perc_err",
+  color = "detector", palette = "jco", outlier.shape = NA
+  )
+bxp1
+
+bxp1 <- ggboxplot(
+  task_df, x = "dist_factor", y = "yaw_err",
+  color = "detector", palette = "jco", outlier.shape = NA
+  )
+bxp1
+
+
+# # Plot
+# task_df %>%
+#   ggplot( aes(x=fitts_id_level, y=average_mt, fill=auto_level)) +
+#     geom_boxplot() +
+#     scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+#     geom_jitter(color="black", size=0.4, alpha=0.9) +
+#     theme_ipsum() +
+#     theme(
+#       legend.position="none",
+#       plot.title = element_text(size=11)
+#     ) +
+#     ggtitle("A boxplot with jitter") +
+#     xlab("")
+
+```
+
+
+## Check assumptions
+
+```{r check assumptions}
+
+# ######################### check for outliers ######################### 
+# task_df %>%
+#   group_by(auto_level, ring_id) %>%
+#   identify_outliers(average_mt)
+# 
+# ######################### check normality ######################### 
+# task_df %>%
+#   group_by(auto_level, ring_id) %>%
+#   shapiro_test(average_mt)
+# 
+# ######################### plot normality ######################### 
+# ggqqplot(task_df, "average_mt", ggtheme = theme_bw()) +
+#   facet_grid(ring_id ~ auto_level, labeller = "label_both")
+
+
+```
+
+
+## Fit ANOVA
+
+```{r fit model}
+
+######################### Two-way mixed ANOVA test #########################  
+res.aov <- anova_test(
+  data = task_df, dv = trans_err, wid = sample_id,
+  within = c(dist_factor, detector)
+  )
+get_anova_table(res.aov)
+
+
+#################### Effect of auto_level for each ring_id ####################
+one.way <- task_df %>%
+  group_by(detector) %>%
+  anova_test(dv = trans_err, wid = sample_id, within = dist_factor) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+#################### Effect of ring_id for each auto_level ####################
+one.way <- task_df %>%
+  group_by(dist_factor) %>%
+  anova_test(dv = trans_err, wid = sample_id, within = detector) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+
+#################### Pairwise comparisons between auto_level groups for each ring_id ####################
+pwc1 <- task_df %>%
+  group_by(dist_factor) %>%
+  pairwise_t_test(
+    trans_err ~ detector, paired = TRUE,
+    p.adjust.method = "holm"
+    )
+pwc1
+# Create a box plot
+pwc1 <- pwc1 %>% add_xy_position(x = "detector", group = "dist_factor")
+bxp2 <- ggboxplot(
+  task_df, x = "detector", y = "trans_err",
+  color = "dist_factor", palette = "jco", outlier.shape = NA
+) +
+  stat_pvalue_manual(
+    pwc1, color = "dist_factor", group.by = "legend.var",
+    bracket.nudge.y = 0.2, step.increase = 0.15, label.size = 3, vjust = 0.1,
+    tip.length = 0, y.position = 20
+  )
+bxp2
+
+
+#################### Pairwise comparisons between ring_id groups for each auto_level ####################
+pwc2 <- task_df %>%
+  group_by(detector) %>%
+  t_test(
+    trans_err ~ dist_factor,
+    p.adjust.method = "holm"
+    )
+pwc2
+# Create a box plot
+pwc2 <- pwc2 %>% add_xy_position(x = "dist_factor", group = "detector")
+bxp3 <- ggboxplot(
+  task_df, x = "dist_factor", y = "trans_err",
+  color = "detector", palette = "jco"
+) +
+  stat_pvalue_manual(
+    pwc2, color = "detector", group.by = "legend.var",
+    bracket.nudge.y = 0.2, step.increase = 0.5, label.size = 3, vjust = 0.1,
+    tip.length = 0, y.position = 20
+  )
+bxp3
+
+
+```
+
+
+## Plot with pairwise
+
+```{r fit model}
+
+task_df$new_dist_factor <- task_df$dist_factor
+task_df$feature_detector <- task_df$detector
+
+levels(task_df$new_dist_factor) <- c("220.44", "440.88", "661.33", "881.77", "1102.22")
+levels(task_df$feature_detector) <- c("SIFT", "Harris", "Shi-Tomasi")
+
+#################### Pairwise comparisons between ring_id groups for each auto_level #################### 
+pwc2 <- task_df %>%
+  group_by(feature_detector) %>%
+  t_test(
+    trans_err ~ new_dist_factor,
+    p.adjust.method = "holm"
+    )
+# Create a box plot
+pwc2 <- pwc2 %>% add_xy_position(x = "new_dist_factor", group = "feature_detector")
+bxp3 <- ggboxplot(
+  task_df, x = "new_dist_factor", y = "trans_err", 
+  fill = "feature_detector", palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+  xlab = "Distance (m).", ylab = "Translation Error (m)", outlier.shape = NA
+) 
+# +
+#   stat_pvalue_manual(
+#     pwc2, group.by = "legend.var", hide.ns = TRUE,
+#     bracket.nudge.y = -0.1, step.increase = 0.07, label.size = 4, vjust = 0.7,
+#     tip.length = 0.02, y.position = 3, color = "feature_detector"
+#   )
+bxp3
+
+# ggsave(file="movement_time.pdf", plot=bxp3, width=5, height=7)
+
+
+```
+
+
+
+## Fit Linear Model
+
+```{r fit model}
+
+###### fit linear mixed model 0 - EXCLUDING THE INTERACTION TERM ######
+# model <- lmer(trans_err ~ distance + feature_detector + (1|sample_id),
+#               data = task_df)
+# summary(model)
+# 
+# 
+# ###### fit linear mixed model 1 ######
+# model <- lmer(trans_err ~ distance * feature_detector + (1|sample_id),
+#               data = task_df)
+# summary(model)
+
+full_model <- lmer(trans_err ~ distance * feature_detector + (1 | sample_id), data = task_df)
+anova(full_model)
+
+
+###### fit linear mixed model 2 ######
+fit <- lm(trans_err ~ distance * feature_detector, data = task_df)
+summary(fit)
+
+interact_plot(fit, pred = distance, modx = feature_detector,
+              interval = TRUE, int.type = "confidence", int.width = .95,
+              # plot.points = TRUE,
+              x.label="Distance (m)", y.label="Translation Error (m)",
+              # modx.labels = c("low", "med", "high")
+              )
+
+```
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
