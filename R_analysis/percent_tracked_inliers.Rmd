@@ -22,8 +22,8 @@ library(ez)
 library(ltm)
 library(interactions)
 library(lmerTest)
-# library(viridis)
-# library(hrbrthemes)
+library(viridis)
+library(hrbrthemes)
 ```
 
 
@@ -39,12 +39,24 @@ detector_order <- c("sift", "harris", "shi_tomasi")
 # Reorder the factor levels
 task_df$detector <- factor(task_df$detector, levels = detector_order)
 
+# some new columns
+task_df$percent_tracked <- task_df$tracked * 100
+task_df$percent_inliers <- task_df$inliers * 100
+task_df$detect_time_ms <- task_df$detect_time * 1000
+
+task_df$new_detector <- task_df$detector
+levels(task_df$new_detector) <- c("SIFT", "Harris", "S-T")
+
 
 ######################### get mean and sd (or se) ######################### 
 task_df %>%
   group_by(detector) %>%
-  get_summary_stats(tracked, type = "mean_sd")
+  get_summary_stats(detect_time_ms, type = "mean_sd")
 
+######################### get mean and sd (or se) ######################### 
+task_df %>%
+  group_by(detector) %>%
+  get_summary_stats(percent_tracked, type = "mean_sd")
 
 
 ```
@@ -54,27 +66,27 @@ task_df %>%
 ```{r do plotting}
 
 bxp1 <- ggboxplot(
-  task_df, x = "detector", y = "tracked", palette = "jco", outlier.shape = NA
-  ) + ylim(0.85, 1.05)
+  task_df, x = "new_detector", y = "percent_tracked", palette = "uchicago", outlier.shape = NA,
+  color = "new_detector", xlab = "Detector", ylab = "Tracked Keypoints (%)"
+  ) + ylim(85, 100) + 
+  theme(legend.position="none", 
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=22))
 bxp1
 
-bxp1 <- ggboxplot(
-  task_df, x = "detector", y = "inliers", palette = "jco", outlier.shape = NA
-  ) + ylim(0.8, 1.05)
-bxp1
+bxp2 <- ggboxplot(
+  task_df, x = "new_detector", y = "detect_time_ms", palette = "uchicago", outlier.shape = NA,
+  color = "new_detector", xlab = "Detector", ylab = "Runtime Per Frame (ms)"
+  ) + ylim(0, 100) + 
+  theme(legend.position="none", 
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=22))
+bxp2
 
 
-# # Plot
-# task_df %>%
-#   ggplot( aes(x=detector, y=tracked)) +
-#     geom_boxplot() +
-#     geom_jitter(color="black", size=0.4, alpha=0.9) +
-#     theme(
-#       legend.position="none",
-#       plot.title = element_text(size=11)
-#     ) +
-#     ggtitle("A boxplot with jitter") +
-#     xlab("")
+ggsave(file="plots/percent_tracked.pdf", plot=bxp1, width=3.5, height=5)
+ggsave(file="plots/detect_time.pdf", plot=bxp2, width=3.5, height=5)
+
 
 ```
 
@@ -113,8 +125,8 @@ res.aov <- anova_test(
 get_anova_table(res.aov)
 
 pwc1 <- task_df %>%
-  t_test(
-    tracked ~ detector,
+  pairwise_t_test(
+    tracked ~ detector, paired = TRUE,
     p.adjust.method = "holm"
     )
 pwc1
@@ -128,8 +140,22 @@ res.aov <- anova_test(
 get_anova_table(res.aov)
 
 pwc2 <- task_df %>%
-  t_test(
-    inliers ~ detector,
+  pairwise_t_test(
+    inliers ~ detector, paired = TRUE,
+    p.adjust.method = "holm"
+    )
+pwc2
+
+######################### Two-way mixed ANOVA test #########################  
+res.aov <- anova_test(
+  data = task_df, dv = detect_time, wid = frame_id,
+  within = detector
+  )
+get_anova_table(res.aov)
+
+pwc2 <- task_df %>%
+  pairwise_t_test(
+    detect_time ~ detector, paired = TRUE,
     p.adjust.method = "holm"
     )
 pwc2

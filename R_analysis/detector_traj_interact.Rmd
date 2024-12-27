@@ -24,6 +24,8 @@ library(interactions)
 library(lmerTest)
 # library(viridis)
 # library(hrbrthemes)
+# install.packages("ggsci")
+library(ggsci)
 ```
 
 
@@ -41,6 +43,14 @@ detectors_order <- c("sift", "harris", "shi_tomasi")
 task_df$dist_factor <- factor(task_df$dist_factor, levels = dist_levels_order)
 task_df$detector <- factor(task_df$detector, levels = detectors_order)
 
+# some new columns
+task_df$"Distance" <- task_df$dist_factor
+task_df$"Detector" <- task_df$detector
+
+levels(task_df$"Distance") <- c("220.44", "440.88", "661.33", "881.77", "1102.22")
+levels(task_df$"Detector") <- c("SIFT", "Harris", "S-T")
+
+
 ######################### get mean and sd (or se) ######################### 
 task_df %>%
   group_by(dist_factor, detector) %>%
@@ -55,22 +65,30 @@ task_df %>%
 ```{r do plotting}
 
 bxp1 <- ggboxplot(
-  task_df, x = "dist_factor", y = "trans_err",
-  color = "detector", palette = "jco", outlier.shape = NA
-  )
+  task_df, x = "Distance", y = "trans_err",
+  color = "Detector", palette = "uchicago", outlier.shape = NA,
+  xlab = "Distance (m)", ylab = "Relative Translation Error (m)"
+  ) + 
+  theme(axis.text=element_text(size=18),
+        axis.title=element_text(size=20),
+        legend.title=element_text(size=18),
+        legend.text=element_text(size=18))
 bxp1
 
-bxp1 <- ggboxplot(
-  task_df, x = "dist_factor", y = "trans_perc_err",
-  color = "detector", palette = "jco", outlier.shape = NA
-  )
-bxp1
+ggsave(file="plots/rel_trans_err.pdf", plot=bxp1, width=6.2, height=5)
 
-bxp1 <- ggboxplot(
-  task_df, x = "dist_factor", y = "yaw_err",
-  color = "detector", palette = "jco", outlier.shape = NA
-  )
-bxp1
+
+# bxp1 <- ggboxplot(
+#   task_df, x = "dist_factor", y = "trans_perc_err",
+#   color = "detector", palette = "uchicago", outlier.shape = NA
+#   )
+# bxp1
+# 
+# bxp1 <- ggboxplot(
+#   task_df, x = "dist_factor", y = "yaw_err",
+#   color = "detector", palette = "uchicago", outlier.shape = NA
+#   )
+# bxp1
 
 
 # # Plot
@@ -149,18 +167,18 @@ pwc1 <- task_df %>%
     p.adjust.method = "holm"
     )
 pwc1
-# Create a box plot
-pwc1 <- pwc1 %>% add_xy_position(x = "detector", group = "dist_factor")
-bxp2 <- ggboxplot(
-  task_df, x = "detector", y = "trans_err",
-  color = "dist_factor", palette = "jco", outlier.shape = NA
-) +
-  stat_pvalue_manual(
-    pwc1, color = "dist_factor", group.by = "legend.var",
-    bracket.nudge.y = 0.2, step.increase = 0.15, label.size = 3, vjust = 0.1,
-    tip.length = 0, y.position = 20
-  )
-bxp2
+# # Create a box plot
+# pwc1 <- pwc1 %>% add_xy_position(x = "detector", group = "dist_factor")
+# bxp2 <- ggboxplot(
+#   task_df, x = "detector", y = "trans_err",
+#   color = "dist_factor", palette = "jco", outlier.shape = NA
+# ) +
+#   stat_pvalue_manual(
+#     pwc1, color = "dist_factor", group.by = "legend.var",
+#     bracket.nudge.y = 0.2, step.increase = 0.15, label.size = 3, vjust = 0.1,
+#     tip.length = 0, y.position = 20
+#   )
+# bxp2
 
 
 #################### Pairwise comparisons between ring_id groups for each auto_level ####################
@@ -171,18 +189,18 @@ pwc2 <- task_df %>%
     p.adjust.method = "holm"
     )
 pwc2
-# Create a box plot
-pwc2 <- pwc2 %>% add_xy_position(x = "dist_factor", group = "detector")
-bxp3 <- ggboxplot(
-  task_df, x = "dist_factor", y = "trans_err",
-  color = "detector", palette = "jco"
-) +
-  stat_pvalue_manual(
-    pwc2, color = "detector", group.by = "legend.var",
-    bracket.nudge.y = 0.2, step.increase = 0.5, label.size = 3, vjust = 0.1,
-    tip.length = 0, y.position = 20
-  )
-bxp3
+# # Create a box plot
+# pwc2 <- pwc2 %>% add_xy_position(x = "dist_factor", group = "detector")
+# bxp3 <- ggboxplot(
+#   task_df, x = "dist_factor", y = "trans_err",
+#   color = "detector", palette = "jco"
+# ) +
+#   stat_pvalue_manual(
+#     pwc2, color = "detector", group.by = "legend.var",
+#     bracket.nudge.y = 0.2, step.increase = 0.5, label.size = 3, vjust = 0.1,
+#     tip.length = 0, y.position = 20
+#   )
+# bxp3
 
 
 ```
@@ -192,17 +210,11 @@ bxp3
 
 ```{r fit model}
 
-task_df$new_dist_factor <- task_df$dist_factor
-task_df$feature_detector <- task_df$detector
-
-levels(task_df$new_dist_factor) <- c("220.44", "440.88", "661.33", "881.77", "1102.22")
-levels(task_df$feature_detector) <- c("SIFT", "Harris", "Shi-Tomasi")
-
 #################### Pairwise comparisons between ring_id groups for each auto_level #################### 
 pwc2 <- task_df %>%
-  group_by(feature_detector) %>%
+  group_by(Detector) %>%
   t_test(
-    trans_err ~ new_dist_factor,
+    trans_err ~ Detector,
     p.adjust.method = "holm"
     )
 # Create a box plot
@@ -242,20 +254,32 @@ bxp3
 #               data = task_df)
 # summary(model)
 
-full_model <- lmer(trans_err ~ distance * feature_detector + (1 | sample_id), data = task_df)
-anova(full_model)
+
+# full_model <- lmer(trans_err ~ distance * Detector + (1 | sample_id), data = task_df)
+# anova(full_model)
 
 
 ###### fit linear mixed model 2 ######
-fit <- lm(trans_err ~ distance * feature_detector, data = task_df)
+fit <- lm(trans_err ~ distance * Detector, data = task_df)
 summary(fit)
 
-interact_plot(fit, pred = distance, modx = feature_detector,
+uchicago_palette <- c("#800000", "#767676", "#FFA319")
+
+plt <- interact_plot(fit, pred = distance, modx = Detector,
               interval = TRUE, int.type = "confidence", int.width = .95,
               # plot.points = TRUE,
-              x.label="Distance (m)", y.label="Translation Error (m)",
+              x.label="Distance (m)", y.label="Relative Translation Error (m)",
               # modx.labels = c("low", "med", "high")
-              )
+              ) + 
+  scale_fill_manual(values = uchicago_palette) +
+  scale_color_manual(values = uchicago_palette) +
+  theme(legend.text=element_text(size=22),
+        legend.title=element_text(size=22),
+        axis.text=element_text(size=22),
+        axis.title=element_text(size=22))
+plt
+
+ggsave(file="plots/interaction.pdf", plot=plt, width=12, height=5)
 
 ```
 
