@@ -300,14 +300,19 @@ if __name__ == '__main__':
         print("maximum error =", np.max(clipped_errs))
         print("maximum error at index =", np.argmax(clipped_errs))
         print("distance at maximum error =", clipped_dist_arr[np.argmax(clipped_errs)])
+        print("scale error at dist = 500 meters is", scale_errs[50])
         print("="*50)
         print("="*50)
         print("="*50)
         print("="*50)
         print("="*50)
+        # pu.plot_error_n_dim(
+        #     ax, plot_traj.accum_distances[10:],
+        #     np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1))[10:],
+        #     plot_dir_i, colors=['b'], labels=['scale'])
         pu.plot_error_n_dim(
-            ax, plot_traj.accum_distances[10:],
-            np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1))[10:],
+            ax, plot_traj.accum_distances[30:50],
+            np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1))[30:50],
             plot_dir_i, colors=['b'], labels=['scale'])
         ax.legend()
         fig.tight_layout()
