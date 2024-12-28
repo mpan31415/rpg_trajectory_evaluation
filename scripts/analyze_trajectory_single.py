@@ -280,9 +280,34 @@ if __name__ == '__main__':
         ax = fig.add_subplot(
             111, xlabel='Distance [m]', ylabel='Scale Drift [%]',
             xlim=[0, plot_traj.accum_distances[-1]])
+        # pu.plot_error_n_dim(
+        #     ax, plot_traj.accum_distances,
+        #     np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1)),
+        #     plot_dir_i, colors=['b'], labels=['scale'])
+        print("="*50)
+        print("="*50)
+        print("="*50)
+        print("="*50)
+        print("="*50)
+        dist_arr: np.ndarray = plot_traj.accum_distances
+        scale_errs: np.ndarray = np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1))
+        print("dist_arr has shape =", dist_arr.shape)
+        print("scale_errs has shape =", scale_errs.shape)
+        clipped_dist_arr = dist_arr[50:]
+        clipped_errs = scale_errs[50:]
+        print("clipped_dist_arr has shape =", clipped_dist_arr.shape)
+        print("clipped_errs has shape =", clipped_errs.shape)
+        print("maximum error =", np.max(clipped_errs))
+        print("maximum error at index =", np.argmax(clipped_errs))
+        print("distance at maximum error =", clipped_dist_arr[np.argmax(clipped_errs)])
+        print("="*50)
+        print("="*50)
+        print("="*50)
+        print("="*50)
+        print("="*50)
         pu.plot_error_n_dim(
-            ax, plot_traj.accum_distances,
-            np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1)),
+            ax, plot_traj.accum_distances[10:],
+            np.reshape(plot_traj.abs_errors['abs_e_scale_perc'], (-1, 1))[10:],
             plot_dir_i, colors=['b'], labels=['scale'])
         ax.legend()
         fig.tight_layout()

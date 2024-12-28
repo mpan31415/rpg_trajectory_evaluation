@@ -5,8 +5,8 @@ from utils import *
 # datasets = ['kitti', 'malaga', 'parking']
 datasets = ['kitti']
 # detectors = ['sift', 'harris', 'shi_tomasi', 'fast']
-detectors = ['sift', 'harris', 'shi_tomasi']
-# detectors = ['shi_tomasi']
+# detectors = ['sift', 'harris', 'shi_tomasi']
+detectors = ['shi_tomasi']
 
 est_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'processed_result_files'))
 analysis_results_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', "results", "vio_mini_project"))
